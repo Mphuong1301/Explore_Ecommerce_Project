@@ -69,7 +69,7 @@ ORDER BY 1;
 ```
 
 - Result table:
-![Q1](https://imgur.com/a/ljjjdlsadaoiwjdoqd-45jkhCC)
+!([https://imgur.com/a/ljjjdlsadaoiwjdoqd-45jkhCC](https://github.com/user-attachments/assets/9f857d70-e406-4b38-983b-eb3cb54d59eb))
 
 Query 2. Bounce rate per traffic source in July 2017 (Bounce_rate = num_bounce/total_visit) (order by total_visit DESC)
 SELECT 
