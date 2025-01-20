@@ -69,7 +69,8 @@ ORDER BY 1;
 ```
 
 - Result table:
-<img src="https://imgur.com/a/ljjjdlsadaoiwjdoqd-45jkhCC" width="250  />
+
+<img width="631" alt="Image" src="https://github.com/user-attachments/assets/9a724cfb-fb93-4547-85b6-357f6603227e" />
 
 Query 2. Bounce rate per traffic source in July 2017 (Bounce_rate = num_bounce/total_visit) (order by total_visit DESC)
 SELECT 
