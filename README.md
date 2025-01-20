@@ -1,15 +1,37 @@
 # Explore_Ecommerce_Project
-Explore-Ecommerce-Dataset
-Introduction
-In this project, I focused on data exploration and calculation of several metrics in the e-commerce sector. The input data is a publicly available dataset on Google BigQuery. Here are a few characteristics of this dataset:
 
+##I. Introduction
+The eCommerce dataset is hosted in a public Google BigQuery dataset and contains information about user sessions on a website, collected through Google Analytics in 2017.
+Based on the eCommerce dataset, the author conducts queries to analyze website activity during 2017. This includes calculating the bounce rate, identifying the days with the highest revenue, examining user behavior on different pages, and performing various other analyses. The project's goal is to gain insights into the business's performance, evaluate the effectiveness of marketing activities, and analyze product-related data.
+In this project, I focused on data exploration and calculation of several metrics in the e-commerce sector.
+
+##II. Read and explain dataset
 Data is stored in tables, each table stores data for one day of the year.
 
 The entire dataset is a system of tables for each day from January 8, 2016 to August 1, 2017.
 
 The tables all have the same format as follows:
 
-table
+ 
+|       Field Name      |    Data Type     | Description     |
+| :------------:|:-------------:|:-----:|
+|    fullVisitorId   |   STRING   |  The unique visitor ID.   |
+|    date     |   STRING  |   The date of the session in YYYYMMDD format.   |
+|     totals    | RECORD  |    This section contains aggregate values across the session.  |
+|    totals.bounces    |  INTEGER	 | Total bounces (for convenience). For a bounced session, the value is 1, otherwise it is null.   |
+|   totals.hits     |  INTEGER	 |   Total number of hits within the session.   |
+|     totals.pageviews    | INTEGER	  |    Total number of pageviews within the session.  |
+|    totals.visits   |  INTEGER	 |  The number of sessions (for convenience). This value is 1 for sessions with interaction events. The value is null if there are no interaction events in the session.  |
+|    trafficSource.source   |  STRING	  |  The source of the traffic source. Could be the name of the search engine, the referring hostname, or a value of the utm_source URL parameter.  |
+|   hits   | RECORD   |  This row and nested fields are populated for any and all types of hits. |
+|   hits.eCommerceAction |   RECORD  | This section contains all of the ecommerce hits that occurred during the session. This is a repeated field and has an entry for each hit that was collected.  |
+|   hits.eCommerceAction.action_type   |   STRING  |  The action type. Click through of product lists = 1, Product detail views = 2, Add product(s) to cart = 3, Remove product(s) from cart = 4, Check out = 5, Completed purchase = 6, Refund of purchase = 7, Checkout options = 8, Unknown = 0.Usually this action type applies to all the products in a hit, with the following exception: when hits.product.isImpression = TRUE, the corresponding product is a product impression that is seen while the product action is taking place (i.e., a product in list view).  |
+|    hits.product   | RECORD  |   This row and nested fields will be populated for each hit that contains Enhanced Ecommerce PRODUCT data.  |
+|   hits.product.productQuantity   |  INTEGER	 | The quantity of the product purchased.   |
+|   hits.product.productRevenue  |  INTEGER	 |   The revenue of the product, expressed as the value passed to Analytics multiplied by 10^6 (e.g., 2.40 would be given as 2400000).  |
+|    hits.product.productSKU   | STRING  |   Product SKU. |
+|    hits.product.v2ProductName	  |  STRING	 |  Product Name.  |
+|   fullVisitorId  |  STRING	  | The unique visitor ID. |
 
 To access the dataset, follow these steps:
 
