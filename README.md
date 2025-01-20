@@ -69,7 +69,7 @@ ORDER BY 1;
 ```
 
 - Result table:
-<img src="[https://imgur.com/a/45jkhCC]">
+![Q1](https://imgur.com/a/ljjjdlsadaoiwjdoqd-45jkhCC)
 
 Query 2. Bounce rate per traffic source in July 2017 (Bounce_rate = num_bounce/total_visit) (order by total_visit DESC)
 SELECT 
@@ -81,6 +81,7 @@ FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`
 GROUP BY trafficSource.source
 ORDER BY source;
 Result table:
+
 
 c2
 
