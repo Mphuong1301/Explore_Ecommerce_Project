@@ -1,11 +1,20 @@
-# Explore_Ecommerce_Project
-
-I. Introduction (h3)
+# [SQL] Explore_Ecommerce_Project
+## Table of Contents:
+### I. Introduction 
 The eCommerce dataset is hosted in a public Google BigQuery dataset and contains information about user sessions on a website, collected through Google Analytics in 2017.
 Based on the eCommerce dataset, the author conducts queries to analyze website activity during 2017. This includes calculating the bounce rate, identifying the days with the highest revenue, examining user behavior on different pages, and performing various other analyses. The project's goal is to gain insights into the business's performance, evaluate the effectiveness of marketing activities, and analyze product-related data.
 In this project, I focused on data exploration and calculation of several metrics in the e-commerce sector.
 
-##II. Read and explain dataset
+### II. Import raw data
+The eCommerce dataset is stored in a public Google BigQuery dataset. To access the dataset, follow these steps:
+
+- Log in to your Google Cloud Platform account and create a new project.
+- Navigate to the BigQuery console and select your newly created project.
+- Select "Add Data" in the navigation panel and then "Search a project".
+- Enter the project ID "bigquery-public-data.google_analytics_sample.ga_sessions" and click "Enter".
+- Click on the "ga_sessions_" table to open it.
+
+### III. Read and explain dataset
 Data is stored in tables, each table stores data for one day of the year.
 
 The entire dataset is a system of tables for each day from January 8, 2016 to August 1, 2017.
@@ -33,37 +42,23 @@ The tables all have the same format as follows:
 |    hits.product.v2ProductName	  |  STRING	 |  Product Name.  |
 |   fullVisitorId  |  STRING	  | The unique visitor ID. |
 
-To access the dataset, follow these steps:
-
-Log in to your Google Cloud Platform account and create a new project.
-Navigate to the BigQuery console and select your newly created project.
-In the navigation panel, select "Add Data" and then "Search a project".
-Enter the project ID "bigquery-public-data.google_analytics_sample.ga_sessions" and click "Enter".
-Click on the "ga_sessions_" table to open it.
+### IV. Exploring the Dataset
 08 queries in Bigquery based on the Google Analytics dataset I wrote
-Query 1. Calculate total visit, pageview, transaction for Jan, Feb and March 2017 (order by month)
-WITH sub AS (
-  SELECT *, 
-    PARSE_DATE('%Y%m%d', date) AS date1
-  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
-  WHERE
-  _table_suffix BETWEEN '0101'AND '0331'
-)
+#### Query 1. Calculate total visit, pageview, transaction for Jan, Feb and March 2017 (order by month)
+- Code
+SELECT
+   FORMAT_DATE("%Y%m",PARSE_DATE("%Y%m%d",date)) month
+   ,SUM(totals.visits) visits
+   ,SUM(totals.pageviews) pageviews
+   ,SUM(totals.transactions) transactions
+   ,ROUND(SUM(totals.totalTransactionRevenue)/POW(10,6),2) revenue
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
+WHERE _table_suffix BETWEEN '0101' AND '0331'
+GROUP BY 1
+ORDER BY 1;
 
-SELECT 
- FORMAT_DATE('%Y%m', date1)AS month,
-  COUNT(totals.visits) AS visits,
-  SUM (totals.pageviews) AS pageviews,
-  SUM (totals.transactions) AS transactions
-FROM
-  sub
-GROUP BY
-  month
-ORDER BY
-  month;
-Result table:
-
-c1
+- Result table:
+<img src="[link_anh_cua_ban](https://imgur.com/a/45jkhCC)">
 
 Query 2. Bounce rate per traffic source in July 2017 (Bounce_rate = num_bounce/total_visit) (order by total_visit DESC)
 SELECT 
