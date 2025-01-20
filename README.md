@@ -1,6 +1,6 @@
 # Explore_Ecommerce_Project
 
-##I. Introduction
+I. Introduction (h3)
 The eCommerce dataset is hosted in a public Google BigQuery dataset and contains information about user sessions on a website, collected through Google Analytics in 2017.
 Based on the eCommerce dataset, the author conducts queries to analyze website activity during 2017. This includes calculating the bounce rate, identifying the days with the highest revenue, examining user behavior on different pages, and performing various other analyses. The project's goal is to gain insights into the business's performance, evaluate the effectiveness of marketing activities, and analyze product-related data.
 In this project, I focused on data exploration and calculation of several metrics in the e-commerce sector.
