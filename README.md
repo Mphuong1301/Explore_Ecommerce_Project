@@ -386,7 +386,7 @@ from product_data;
 
 ### V. Conclusions
 
-- By analyzing the e-commerce dataset using BigQuery, we understands customer behavior through the bounce rate, transaction, revenue, visit, and purchase.
+- By analyzing the e-commerce dataset using BigQuery, we understands customer behavior through the bounce rate, transaction, revenue, visit, and purchase.
 
 - We gained insights into which marketing channels drive traffic and sales by examining referral sources. Investing resources in effective channels and optimizing underperforming ones can improve marketing ROI.
 
