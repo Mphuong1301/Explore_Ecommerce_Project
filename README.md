@@ -44,7 +44,9 @@ The tables all have the same format as follows:
 
 ### IV. Exploring the Dataset
 08 queries in Bigquery based on the Google Analytics dataset I wrote
-#### Query 1. Calculate total visit, pageview, transaction for Jan, Feb and March 2017 (order by month)
+
+#### Query 1: Calculate total visit, pageview, transaction for Jan, Feb and March 2017 (order by month)
+
 - Code
 ```sh
 SELECT
@@ -72,179 +74,320 @@ ORDER BY 1;
 
 <img width="631" alt="Image" src="https://github.com/user-attachments/assets/9a724cfb-fb93-4547-85b6-357f6603227e" />
 
-Query 2. Bounce rate per traffic source in July 2017 (Bounce_rate = num_bounce/total_visit) (order by total_visit DESC)
-SELECT 
-  trafficSource.source AS source,
-  COUNT (totals.bounces) AS total_no_of_bounces,
-  COUNT (totals.visits) AS total_visits,
-  ROUND((COUNT (totals.bounces) / COUNT (totals.visits) * 100),7) AS bounce_rate
-FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*` 
+#### Query 2: Bounce rate per traffic source in July 2017 (Bounce_rate = num_bounce/total_visit) (order by total_visit DESC)
+
+- Code
+```sh
+SELECT trafficSource.source
+
+   ,COUNT(visitNumber) total_visits
+
+   ,SUM(totals.bounces) total_no_of_bounces
+
+   ,ROUND((SUM(totals.bounces)/COUNT(visitNumber))*100,2) bounce_rate
+
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`
+
 GROUP BY trafficSource.source
-ORDER BY source;
-Result table:
 
+ORDER BY 2 DESC;
+```
 
-c2
+- Result table:
 
-Query 3. Revenue by traffic source by week, by month in June 2017
-WITH sub1 AS (
-  SELECT *,
-  PARSE_DATE('%Y%m%d', date) AS date1
-  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201706*`
+<img width="534" alt="Image" src="https://github.com/user-attachments/assets/e94a9856-ccd2-4b4d-9b42-685f49156c93" />
+
+#### Query 3: Revenue by traffic source by week, by month in June 2017
+
+- Code
+```sh
+WITH month_data AS (
+
+   SELECT
+
+       DISTINCT CASE WHEN 1=1 THEN "Month" END time_type
+
+       ,FORMAT_DATE("%Y%m", PARSE_DATE("%Y%m%d", date)) AS time
+
+       ,trafficSource.source AS source
+
+       ROUND(SUM(totals.totalTransactionRevenue/1000000) OVER(PARTITION BY trafficSource.source),2) revenue
+
+   FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201706*`
+
 ),
-sub2 AS (
-  SELECT  
-    'Month' as time_type, 
-    FORMAT_DATE ('%Y%m',date1) AS time,
-    trafficSource.source AS source,
-    ROUND ((SUM (productRevenue) / 1000000 ),4) AS revenue
-  FROM sub1,
-  UNNEST (hits) hits,
-  UNNEST (hits.product) product
-  WHERE productRevenue IS NOT NULL
-  GROUP BY trafficSource.source, time
-),
-sub3 AS (
-  SELECT  
-    'Month' as time_type, 
-    FORMAT_DATE ('%Y%W',date1) AS time,
-    trafficSource.source AS source,
-    ROUND ((SUM (productRevenue) / 1000000 ),4) AS revenue
-  FROM sub1,
-  UNNEST (hits) hits,
-  UNNEST (hits.product) product
-  WHERE productRevenue IS NOT NULL
-  GROUP BY trafficSource.source, time
+
+week_data AS (
+
+   SELECT
+
+       CASE WHEN 1=1 THEN "WEEK" END time_type
+
+       ,FORMAT_DATE("%Y%W", PARSE_DATE("%Y%m%d", date)) AS time
+
+       ,trafficSource.source AS source
+
+       ,SUM(totals.totalTransactionRevenue)/1000000 revenue
+
+   FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
+
+   WHERE _table_suffix BETWEEN '0601' AND '0630'
+
+   GROUP BY 1,2,3
+
 )
-SELECT *
-FROM sub2
+
+SELECT * FROM month_data
+
 UNION ALL
-SELECT *
-FROM sub3
-ORDER BY time;
-Result table:
 
-c3
+SELECT * FROM week_data
 
-Query 4. Average number of pageviews by purchaser type (purchasers vs non-purchasers) in June, July 2017.
-SELECT
-  FORMAT_DATE ("%Y%m", PARSE_DATE ("%Y%m%d", date)) AS month, 
-  ROUND(SUM (CASE WHEN totals.transactions >= 1 AND product.productRevenue IS NOT NULL THEN totals.pageviews END) / COUNT (DISTINCT (CASE
-            WHEN totals.transactions >= 1 AND product.productRevenue IS NOT NULL THEN fullVisitorId
-        END
-          )),7) AS avg_pageviews_purchase,
-  ROUND(SUM (CASE WHEN totals.transactions IS NULL AND product.productRevenue IS NULL THEN totals.pageviews END) / COUNT (DISTINCT (CASE
-                WHEN totals.transactions IS NULL AND product.productRevenue IS NULL THEN fullVisitorId
-            END
-              )),7) AS avg_pageviews_non_purchase
-FROM
-  `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`, UNNEST (hits) hits, UNNEST (hits.product) product
-WHERE
-  _table_suffix BETWEEN '0601'AND '0731'
-GROUP BY
-  month
-ORDER BY month;
-Result table:
+ORDER BY revenue DESC;
+```
 
-c4
+- Result table:
 
-Query 5. Average number of transactions per user that made a purchase in July 2017
-SELECT 
-  FORMAT_DATE ("%Y%m", PARSE_DATE ("%Y%m%d", date)) AS month,
-  SUM (totals.transactions)/ COUNT (DISTINCT fullVisitorId) AS Avg_total_transactions_per_user
-FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
-UNNEST (hits) hits,
-UNNEST (hits.product) product
-WHERE totals.transactions >=1 AND productRevenue IS NOT NULL AND (eCommerceAction.action_type) LIKE '6'
-GROUP BY FORMAT_DATE ("%Y%m", PARSE_DATE ("%Y%m%d", date));
-Result table:
+<img width="604" alt="Image" src="https://github.com/user-attachments/assets/d79c5da3-f007-47d7-9499-a5d92355cf31" />
 
-c5
+#### Query 4. Average number of pageviews by purchaser type (purchasers vs non-purchasers) in June, July 2017.
 
-Query 6. Average amount of money spent per session. Only include purchaser data in July 2017
-SELECT 
+- Code
+```sh
+WITH purchaser_data as (
 
-  FORMAT_DATE ("%Y%m", PARSE_DATE ("%Y%m%d", date)) AS month,
+   SELECT
 
-  ROUND(SUM (productRevenue) / 1000000 / COUNT(visitId), 2) AS avg_revenue_by_user_per_visit
+       FORMAT_DATE("%Y%m", PARSE_DATE("%Y%m%d", date)) as month
 
-FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
+       ,SUM(totals.pageviews) / COUNT(distinct fullvisitorid) as avg_views_purchase
 
-UNNEST (hits) hits,
+   FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
 
-UNNEST (hits.product) product
+       ,UNNEST(hits) hits
 
-WHERE totals.transactions IS NOT NULL AND product.productRevenue is not null
+       ,UNNEST(hits.product) product
 
-GROUP BY FORMAT_DATE ("%Y%m", PARSE_DATE ("%Y%m%d", date));
-Result table:
+   WHERE _table_suffix BETWEEN '0601' AND '0731'
 
-c6
+       AND totals.transactions >= 1
 
-Query 7. Other products purchased by customers who purchased product "YouTube Men's Vintage Henley" in July 2017. Output should show product name and the quantity was ordered.
-WITH sub AS (
-  SELECT DISTINCT fullVisitorId
-  FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
-UNNEST (hits) hits,
-UNNEST (hits.product) product
-WHERE v2ProductName LIKE "YouTube Men's Vintage Henley" 
-AND totals.transactions >=1 
-AND productRevenue IS NOT NULL
+       AND productRevenue IS NOT NULL
+
+   GROUP BY 1
+
 ),
-sub2 AS (
-SELECT  *
-FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`,
-UNNEST (hits) hits,
-UNNEST (hits.product) product
-WHERE totals.transactions >=1 
-AND productRevenue IS NOT NULL
+
+non_purchaser_data as (
+
+   SELECT
+       FORMAT_DATE("%Y%m", PARSE_DATE("%Y%m%d", date)) month
+
+       ,SUM(totals.pageviews) / COUNT(distinct fullvisitorid) avg_views_non_purchase
+
+   FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
+
+       ,UNNEST(hits) hits
+
+       ,UNNEST(hits.product) product
+
+   WHERE _table_suffix BETWEEN '0601' AND '0731'
+
+       AND totals.transactions IS NULL
+
+       AND productRevenue IS NULL
+
+   GROUP BY 1
+
 )
-SELECT 
-  v2ProductName AS other_purchased_products,
-  SUM(productQuantity) AS quantity
-from sub LEFT join sub2 ON sub.fullVisitorId=sub2.fullVisitorId
-WHERE totals.transactions >=1 
-  AND productRevenue IS NOT NULL
-  AND v2ProductName NOT LIKE "YouTube Men's Vintage Henley"
-GROUP BY v2ProductName;
-Result table:
 
-c7
-
-Query 8. Calculate cohort map from product view to addtocart to purchase in Jan, Feb and March 2017. (For example, 100% product view then 40% add_to_cart and 10% purchase. Add_to_cart_rate = number product add to cart/number product view. Purchase_rate = number product purchase/number product view). The output should be calculated in product level.
 SELECT
 
-  FORMAT_DATE ("%Y%m", PARSE_DATE ("%Y%m%d", date)) AS month,
+   month
 
-  COUNT (CASE WHEN hits.eCommerceAction.action_type LIKE '2' 
+   ,avg_views_purchase
 
-    THEN v2ProductName END) AS num_product_view,
+   ,avg_views_non_purchase
 
-  COUNT (CASE WHEN hits.eCommerceAction.action_type LIKE '3' 
+FROM purchaser_data
 
-    THEN v2ProductName END) AS num_addtocart,
+FULL JOIN non_purchaser_data
 
-  COUNT (CASE WHEN hits.eCommerceAction.action_type LIKE '6' AND totals.transactions >= 1 AND productRevenue IS NOT NULL 
-  
-    THEN v2ProductName END) AS num_purchase,
-
-  ROUND ((COUNT (CASE WHEN hits.eCommerceAction.action_type LIKE '3' THEN v2ProductName END)/COUNT (CASE WHEN hits.eCommerceAction.action_type LIKE '2' THEN v2ProductName END) * 100.0),2) AS add_to_cart_rate,
-
-  ROUND ((COUNT (CASE WHEN hits.eCommerceAction.action_type LIKE '6' 
-    AND totals.transactions >= 1 AND productRevenue IS NOT NULL
-    THEN v2ProductName END)/COUNT (CASE WHEN hits.eCommerceAction.action_type LIKE '2' THEN v2ProductName END)* 100.0), 2) AS purchase_rate
-
-FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`,
-
-UNNEST (hits) hits,
-
-UNNEST (hits.product) product
-
-WHERE _table_suffix BETWEEN '0101'AND '0331'
-
-GROUP BY 1 
+USING (month)
 
 ORDER BY 1;
-Result table:
+```
 
-c8
+- Result table:
+
+<img width="392" alt="Image" src="https://github.com/user-attachments/assets/0e126e86-2ddb-482c-964c-3dd7e1e2e4d0" />
+
+#### Query 5. Average number of transactions per user that made a purchase in July 2017
+
+- Code
+```sh
+SELECT
+
+   FORMAT_DATE("%Y%m", PARSE_DATE("%Y%m%d", date)) month
+
+   ,ROUND(SUM(totals.transactions)/COUNT(DISTINCT fullVisitorId), 9) as avg_total_transactions
+
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`
+
+   ,UNNEST (hits) as hits
+
+   ,UNNEST (hits.product) as product
+
+WHERE totals.transactions >= 1
+
+AND product.productRevenue IS NOT NULL
+
+GROUP BY 1;
+```
+
+- Result table:
+
+<img width="349" alt="Image" src="https://github.com/user-attachments/assets/349be46f-8251-415c-94df-d9956dd1b349" />
+
+#### Query 6. Average amount of money spent per session. Only include purchaser data in July 2017
+
+- Code
+```sh
+SELECT
+
+   FORMAT_DATE('%Y%m', PARSE_DATE('%Y%m%d', date)) AS month
+
+   ,ROUND((SUM(product.productRevenue) / SUM(totals.visits))/1000000, 2) AS avg_revenue_per_visit
+
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
+
+   ,UNNEST(hits) AS hits
+
+   ,UNNEST(hits.product) AS product
+
+WHERE
+
+   _TABLE_SUFFIX BETWEEN '0701' AND '0731'
+
+   AND product.productRevenue IS NOT NULL
+
+   AND totals.transactions IS NOT NULL
+
+GROUP BY 1;
+```
+
+- Result table:
+
+<img width="317" alt="Image" src="https://github.com/user-attachments/assets/bd80f3b5-7564-4acc-830a-8fbe2bf254b2" />
+
+#### Query 7. Other products purchased by customers who purchased product "YouTube Men's Vintage Henley" in July 2017. Output should show product name and the quantity was ordered.
+
+- Code
+```sh
+WITH CUS_ID AS (
+
+SELECT
+
+   DISTINCT fullVisitorId as Henley_customer_id
+
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*`
+
+   ,UNNEST(hits) AS hits
+
+   ,UNNEST(hits.product) as product
+
+WHERE product.v2ProductName = "YouTube Men's Vintage Henley"
+
+AND product.productRevenue IS NOT NULL
+
+)
+
+SELECT
+
+   product.v2ProductName AS other_purchased_products
+
+   ,SUM(product.productQuantity) AS quantity
+
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_201707*` ga_session
+
+RIGHT JOIN CUS_ID
+
+ON CUS_ID.Henley_customer_id=ga_session.fullVisitorId
+
+   ,UNNEST(hits) AS hits
+
+   ,UNNEST(hits.product) as product
+
+WHERE ga_session.fullVisitorId IN (
+
+   SELECT *
+
+   FROM CUS_ID
+
+)
+
+AND product.v2ProductName <> "YouTube Men's Vintage Henley"
+
+AND product.productRevenue IS NOT NULL
+
+GROUP BY product.v2ProductName
+
+ORDER BY 2 DESC;
+```
+
+- Result table:
+
+<img width="315" alt="Image" src="https://github.com/user-attachments/assets/6b5a186c-a4f5-4fb8-b102-3a5150fc6113" />
+
+#### Query 8. Calculate cohort map from product view to addtocart to purchase in Jan, Feb and March 2017. (For example, 100% product view then 40% add_to_cart and 10% purchase. Add_to_cart_rate = number product add to cart/number product view. Purchase_rate = number product purchase/number product view). The output should be calculated in product level.
+
+- Code
+```sh
+WITH product_data AS (
+
+SELECT
+
+   FORMAT_DATE("%Y%m",PARSE_DATE("%Y%m%d",date)) AS month
+
+   ,COUNT(CASE WHEN eCommerceAction.action_type = '2' THEN product.v2ProductName END) AS num_product_view
+
+   ,COUNT(CASE WHEN eCommerceAction.action_type = '3' THEN product.v2ProductName END) AS num_add_to_cart
+
+   ,COUNT(CASE WHEN eCommerceAction.action_type = '6' AND product.productRevenue IS NOT NULL THEN product.v2ProductName END) AS num_purchase
+
+FROM `bigquery-public-data.google_analytics_sample.ga_sessions_2017*`
+
+   ,UNNEST (hits) AS hits
+
+   ,UNNEST (hits.product) as product
+
+WHERE _table_suffix BETWEEN '0101' AND '0331'
+
+AND eCommerceAction.action_type IN ('2', '3', '6')
+
+GROUP BY 1
+
+ORDER BY 1
+
+)
+
+SELECT *
+
+   ,ROUND(num_add_to_cart/num_product_view * 100, 2) add_to_cart_rate
+
+   ,ROUND(num_purchase/num_product_view * 100, 2) purchase_rate
+
+from product_data;
+```
+
+- Result table:
+
+<img width="606" alt="Image" src="https://github.com/user-attachments/assets/72154214-a1d6-4dd8-8b88-ca5e86983e26" />
+
+### V. Conclusions
+
+- By analyzing the e-commerce dataset using BigQuery, we understands customer behavior through the bounce rate, transaction, revenue, visit, and purchase.
+
+- We gained insights into which marketing channels drive traffic and sales by examining referral sources. Investing resources in effective channels and optimizing underperforming ones can improve marketing ROI.
+
+- In conclusion, exploring the e-commerce dataset on BigQuery unearthed a wealth of insights critical for strategic decision-making to help the business can optimize operations, enhance customer experiences, and drive revenue.
